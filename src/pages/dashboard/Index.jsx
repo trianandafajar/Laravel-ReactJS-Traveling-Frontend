@@ -1,29 +1,20 @@
-//import layout
 import React, { useEffect } from "react";
-
-//import layout web
 import LayoutAdmin from "../../layouts/Dashboard";
 
 function Dashboard() {
-	const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
-    });
-  };
+  useEffect(() => {
+    document.title = "Dashboard | Admin"; // Set title halaman
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
-	//hook
-	useEffect(() => {
-		scrollToTop();
-	}, []);
-
-	return (
-		<React.Fragment>
-			<LayoutAdmin>
-				<p>dashboard</p>
-			</LayoutAdmin>
-		</React.Fragment>
-	);
+  return (
+    <LayoutAdmin>
+      <div className="p-6">
+        <h1 className="text-2xl font-semibold mb-4">Dashboard</h1>
+        <p className="text-gray-600">Selamat datang di halaman Dashboard.</p>
+      </div>
+    </LayoutAdmin>
+  );
 }
 
 export default Dashboard;
