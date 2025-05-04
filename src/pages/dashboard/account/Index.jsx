@@ -4,298 +4,205 @@ import { Api } from "../../../api";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { useHistory } from "react-router-dom";
+import InputField from "../../../components/form/InputField";
 
 function Account() {
-	document.title = "Traveling | Account";
-	const [name, setNamed] = useState("");
-	//state loading
-	const [isLoading, setLoading] = useState(false);
-	const [isLoadingPassword, setLoadingPassword] = useState(false);
-	const [current_password, setCurrentPassword] = useState("");
-	const [new_password, setNewPassword] = useState("");
-	const [confirm_password, setConfirmPassword] = useState("");
+  document.title = "Traveling | Account";
+  const [name, setName] = useState("");
+  const [isLoading, setLoading] = useState(false);
+  const [isLoadingPassword, setLoadingPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [validation, setValidation] = useState({});
+  const [showName, setShowName] = useState(false);
+  const [showPass, setShowPass] = useState(false);
 
-	//state validation
-	const [validation, setValidation] = useState({});
-	//hook
-	const token = Cookies.get("token");
-	const history = useHistory();
-	//fetchData
-	const fetchData = async () => {
-		//fetch on Rest API
-		await Api.get("/profile", {
-			headers: {
-				//header Bearer + Token
-				Authorization: `Bearer ${token}`,
-			},
-		}).then((response) => {
-			setNamed(response.data.data.name);
-		});
-	};
-	
-	const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
-    });
+  const token = Cookies.get("token");
+  const history = useHistory();
+
+  const fetchData = async () => {
+    try {
+      const { data } = await Api.get("/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setName(data.data.name);
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+    }
   };
 
-	//hook useEffect
-	useEffect(() => {
-		//call function "fetchData"
-		scrollToTop();
-		fetchData();
-	}, []);
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    fetchData();
+  }, []);
 
-	//function "updateAccount"
-	const updateAccount = async (e) => {
-		e.preventDefault();
-		setLoading(true);
-		//define formData
-		const formData = new FormData();
+  const updateAccount = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("_method", "POST");
 
-		formData.append("name", name);
-		formData.append("_method", "POST");
+    try {
+      await Api.post(`/profile`, formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setLoading(false);
+      toast.success("Data Updated!", {
+        duration: 4000,
+        position: "top-right",
+        style: { background: "#333", color: "#fff" },
+      });
+      Cookies.set("user_name", name);
+      fetchData();
+      setValidation({});
+    } catch (error) {
+      setLoading(false);
+      setValidation(error.response?.data?.errors || {});
+    }
+  };
 
-		await Api.post(`/profile`, formData, {
-			//header
-			headers: {
-				//header Bearer + Token
-				Authorization: `Bearer ${token}`,
-			},
-		})
-			.then(() => {
-				//set state isLoading to "false"
-				setLoading(false);
-				//show toast
-				toast.success("Data Updated!", {
-					duration: 4000,
-					position: "top-right",
-					className: "toast",
-					style: {
-						background: "#333",
-						color: "#fff",
-					},
-				});
+  const updatePassword = async (e) => {
+    e.preventDefault();
+    setLoadingPassword(true);
 
-				//redirect dashboard page
-				history.push("/user/account");
-				setValidation(false);
-				setTimeout(function () {
-					Cookies.set("user_name", name);
-					window.location.reload(1);
-				}, 2000);
-			})
-			.catch((error) => {
-				//set state isLoading to "false"
-				setLoading(false);
+    try {
+      await Api.post(
+        `/update-password`,
+        {
+          current_password: currentPassword,
+          new_password: newPassword,
+          confirm_password: confirmPassword,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-				//set state "validation"
-				setValidation(error.response.data.errors);
-			});
-	};
+      toast.success("Password Updated Successfully!", {
+        duration: 4000,
+        position: "top-right",
+        style: { background: "#333", color: "#fff" },
+      });
 
-	//function "updateAccount"
-	const updatePassword = async (e) => {
-		e.preventDefault();
-		setLoadingPassword(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setValidation({});
+      setShowPass(false);
+    } catch (error) {
+      setValidation(error.response?.data || {});
+    } finally {
+      setLoadingPassword(false);
+    }
+  };
 
-		await Api.post(
-			`/update-password`,
-			{
-				current_password: current_password,
-				new_password: new_password,
-				confirm_password: confirm_password,
-			},
-			{
-				//header
-				headers: {
-					//header Bearer + Token
-					Authorization: `Bearer ${token}`,
-				},
-			}
-		)
-			.then(() => {
-				//set state isLoading to "false"
-				setLoadingPassword(false);
-
-				//show toast
-				toast.success("Password Updated Successfully!", {
-					duration: 4000,
-					position: "top-right",
-					className: "toast",
-					style: {
-						background: "#333",
-						color: "#fff",
-					},
-				});
-
-				//redirect dashboard page
-				history.push("/user/account");
-				setValidation(false);
-				setCurrentPassword("");
-				setNewPassword("");
-				setConfirmPassword("");
-				setTimeout(function () {
-					window.location.reload(1);
-				}, 2000);
-			})
-			.catch((error) => {
-				//set state isLoading to "false"
-				setLoadingPassword(false);
-
-				//set state "validation"
-				// console.log(error.response);
-				setValidation(error.response.data);
-			});
-	};
-
-	const [showName, setShowName] = useState();
-	const [showPass, setShowPass] = useState();
-	return (
-		<React.Fragment>
-			<LayoutAdmin>
-				<div className="grid grid-cols-1 gap-y-4">
-					<section className="flex flex-col justify-start">
-						<h5 className="text-3xl font-semibold">Account Information</h5>
-						<p className="text-base font-normal text-gray-500">
-							Lorem ipsum dolor sit amet consectetur adipisicing elit. Numquam,
-							sapiente voluptas praesentium.
-						</p>
-					</section>
-					<hr className="w-full" />
-					<section className="flex flex-row justify-between">
-						<h5 className="text-base font-medium">Name</h5>
-						<p className="text-sm font-normal w-96 text-gray-500 mb-0">
-							Lorem ipsum dolor sit amet consectetur adipisicing elit. Atque
-							adipisci accusamus culpa pariatur
-						</p>
-						<button
-							onClick={() => setShowName(!showName)}
-							className="text-blue-900 text-base font-medium"
-						>
-							Change name
-						</button>
-					</section>
-					{/* showing name input */}
-					{showName ? (
-						<section className="flex items-center justify-between">
-							<form
-								onSubmit={updateAccount}
-								className="space-y-2 w-full items-start flex justify-between"
-							>
-								<div className="flex flex-col gap-y-2 w-96">
-									<label
-										htmlFor="name"
-										className="text-sm font-normal text-gray-800"
-									>
-										Name
-									</label>
-									<input
-										type="text"
-										value={name}
-										onChange={(e) => setNamed(e.target.value)}
-										placeholder="Enter your name"
-										className="border-b text-sm focus:outline-none"
-									/>
-									{validation.name && (
-										<div className="text-red-500">{validation.name[0]}</div>
-									)}
-								</div>
-								<button
-									type="submit"
-									className="bg-black px-4 py-2 rounded-lg text-sm text-white"
-									disabled={isLoading ? true : false}
-								>
-									{isLoading ? "Loading..." : "Save Change"}
-								</button>
-							</form>
-						</section>
-					) : null}
-					<hr className="w-full" />
-					<section className="flex flex-row justify-between items-start">
-						<h5 className="text-base font-medium">Password</h5>
-						<p className="text-sm font-normal w-96 text-gray-500 mb-0">
-							Lorem ipsum dolor sit amet consectetur adipisicing elit. Atque
-							adipisci accusamus culpa pariatur
-						</p>
-						<button
-							onClick={() => setShowPass(!showPass)}
-							className="text-blue-900 text-base font-medium"
-						>
-							Change password
-						</button>
-					</section>
-					{/* showing email input */}
-					{showPass ? (
-						<section className="flex items-center justify-between">
-							<form
-								onSubmit={updatePassword}
-								className="space-y-2 w-full items-start flex justify-between"
-							>
-								<div className="flex flex-col gap-y-2 w-96">
-									<label
-										htmlFor="name"
-										className="text-sm font-normal text-gray-800"
-									>
-										Password
-									</label>
-									<div className="space-y-4 flex flex-col w-96">
-										<input
-											type="password"
-											value={current_password}
-											onChange={(e) => setCurrentPassword(e.target.value)}
-											placeholder="Enter your current password"
-											className="border-b text-sm focus:outline-none"
-										/>
-										{validation.current_password ? (
-											<div className="text-red-500">
-												{validation.current_password[0]}
-											</div>
-										) : (
-											<div className="text-red-500">{validation.message}</div>
-										)}
-										<input
-											type="password"
-											value={new_password}
-											onChange={(e) => setNewPassword(e.target.value)}
-											placeholder="Enter your new password"
-											className="border-b text-sm focus:outline-none"
-										/>
-										{validation.new_password ? (
-											<div className="text-red-500">
-												{validation.new_password[0]}
-											</div>
-										) : (
-											<div className="text-red-500"></div>
-										)}
-										<input
-											type="password"
-											value={confirm_password}
-											onChange={(e) => setConfirmPassword(e.target.value)}
-											placeholder="Re type your new password"
-											className="border-b text-sm focus:outline-none"
-										/>
-										{validation.confirm_password && (
-											<div className="text-red-500">
-												{validation.confirm_password[0]}
-											</div>
-										)}
-									</div>
-								</div>
-								<button
-									className="bg-black px-4 py-2 rounded-lg text-sm text-white"
-									disabled={isLoadingPassword ? true : false}
-								>
-									{isLoadingPassword ? "Loading..." : "Save Change"}
-								</button>
-							</form>
-						</section>
-					) : null}
-				</div>
-			</LayoutAdmin>
-		</React.Fragment>
-	);
+  return (
+    <LayoutAdmin>
+      <div className="grid grid-cols-1 gap-y-4">
+        <section>
+          <h5 className="text-3xl font-semibold">Account Information</h5>
+          <p className="text-base font-normal text-gray-500">
+            Manage your account information and password settings.
+          </p>
+        </section>
+        <hr />
+        <section className="flex justify-between items-start">
+          <h5 className="text-base font-medium">Name</h5>
+          <p className="text-sm font-normal w-96 text-gray-500">
+            Update the name associated with your account.
+          </p>
+          <button
+            onClick={() => setShowName(!showName)}
+            className="text-blue-900 text-base font-medium"
+          >
+            Change name
+          </button>
+        </section>
+        {showName && (
+          <section>
+            <form
+              onSubmit={updateAccount}
+              className="flex justify-between items-center"
+            >
+              <InputField
+                label="Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your name"
+                error={validation?.name?.[0]}
+              />
+              <button
+                type="submit"
+                className="bg-black px-4 py-2 rounded-lg text-sm text-white"
+                disabled={isLoading}
+              >
+                {isLoading ? "Loading..." : "Save Change"}
+              </button>
+            </form>
+          </section>
+        )}
+        <hr />
+        <section className="flex justify-between items-start">
+          <h5 className="text-base font-medium">Password</h5>
+          <p className="text-sm font-normal w-96 text-gray-500">
+            Update your password regularly for security.
+          </p>
+          <button
+            onClick={() => setShowPass(!showPass)}
+            className="text-blue-900 text-base font-medium"
+          >
+            Change password
+          </button>
+        </section>
+        {showPass && (
+          <section>
+            <form
+              onSubmit={updatePassword}
+              className="flex justify-between items-center"
+            >
+              <div className="space-y-4 flex flex-col w-96">
+                <InputField
+                  label="Current Password"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter your current password"
+                  error={
+                    validation?.current_password?.[0] || validation?.message
+                  }
+                />
+                <InputField
+                  label="New Password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter your new password"
+                  error={validation?.new_password?.[0]}
+                />
+                <InputField
+                  label="Confirm Password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-type your new password"
+                  error={validation?.confirm_password?.[0]}
+                />
+              </div>
+              <button
+                type="submit"
+                className="bg-black px-4 py-2 rounded-lg text-sm text-white"
+                disabled={isLoadingPassword}
+              >
+                {isLoadingPassword ? "Loading..." : "Save Change"}
+              </button>
+            </form>
+          </section>
+        )}
+      </div>
+    </LayoutAdmin>
+  );
 }
 
 export default Account;
