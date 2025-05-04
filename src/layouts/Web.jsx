@@ -1,18 +1,16 @@
 import React from "react";
 
-//import component Header
+// Import component Header dan Footer
 import Header from "../components/web/Header";
-
-//import component Footer
 import Footer from "../components/web/Footer";
 
 const LayoutWeb = ({ children }) => {
   return (
-    <React.Fragment>
-      <Header/>
-        {children}
+    <>
+      <Header />
+      <main className="min-h-screen">{children}</main>
       <Footer />
-    </React.Fragment>
+    </>
   );
 };
 
